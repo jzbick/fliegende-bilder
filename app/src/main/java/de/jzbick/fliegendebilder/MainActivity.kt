@@ -19,7 +19,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         if (allPermissionsGranted()) {
-            println("hello")
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
