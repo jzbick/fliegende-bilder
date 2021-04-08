@@ -1,4 +1,5 @@
 <resources>
   <string name="app_name">Fliegende Bilder</string>
   <string name="welcome">Hello ITC!</string>
+  <string name="image_description">Historisches Bild</string>
 </resources>
