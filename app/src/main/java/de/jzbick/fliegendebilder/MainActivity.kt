@@ -10,11 +10,13 @@ import uk.co.appoly.arcorelocation.LocationMarker
 import uk.co.appoly.arcorelocation.LocationScene
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper
 import java.util.concurrent.CompletableFuture
+import de.jzbick.fliegendebilder.Location
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var arFragment: ArFragment
     private var locationScene: LocationScene? = null
+    private var locations: ArrayList<Location> = ArrayList<Location>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,8 +28,15 @@ class MainActivity : AppCompatActivity() {
             ARLocationPermissionHelper.requestPermission(this)
         }
 
+        this.loadLocations()
         this.init()
+    }
 
+    private fun loadLocations() {
+        locations.add(Location(51.505454, 7.472779))
+        locations.add(Location(51.5047335,7.4704443))
+        locations.add(Location(51.5047376,7.4674283))
+        locations.add(Location(51.5023117,7.4639605))
     }
 
     override fun onResume() {
@@ -43,11 +52,19 @@ class MainActivity : AppCompatActivity() {
                 locationScene = LocationScene(this, arFragment.arSceneView)
 
                 createViewRenderable()?.thenAccept { viewRenderable ->
+                    for (location in locations) {
+                        val locationMarker = location.toLocationMarker(viewRenderable)
 
-                    val marker = renderableToLocationMarker(viewRenderable, 7.472779, 51.505454)
+                        val myLatitude: Double = 51.5059775
+                        val myLongitude: Double = 7.4736377
+                        val distance = location.getDistanceTo(myLatitude, myLongitude)
 
-                    locationScene?.mLocationMarkers?.add(marker)
-                    locationScene?.refreshAnchors()
+                        if (distance <= 1) {
+                            locationMarker.scaleModifier = (1 - distance + 0.1).toFloat();
+                            locationScene?.mLocationMarkers?.add(locationMarker)
+                            locationScene?.refreshAnchors()
+                        }
+                    }
                 }
             } else {
                 locationScene?.processFrame(arFragment.arSceneView.arFrame)
