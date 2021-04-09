@@ -1,7 +1,5 @@
 package de.jzbick.fliegendebilder
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -15,15 +13,12 @@ import com.google.ar.sceneform.ux.TransformableNode
 import kotlinx.android.synthetic.main.activity_main.*
 import uk.co.appoly.arcorelocation.LocationMarker
 import uk.co.appoly.arcorelocation.LocationScene
-import android.location.LocationManager
-import androidx.core.app.ActivityCompat
 import java.util.concurrent.CompletableFuture
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var arFragment: ArFragment
     private var locationScene: LocationScene? = null
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,76 +31,57 @@ class MainActivity : AppCompatActivity() {
                 return@setOnTapArPlaneListener
             }
 
-            placeImage(hitResult.createAnchor())
+            // placeImage(hitResult.createAnchor())
+
         }
 
-        arFragment.arSceneView.scene.addOnUpdateListener { _ ->
+
+
+        this.init()
+
+    }
+
+    private fun init() {
+        Log.i("DEBUG", "init")
+        arFragment.arSceneView.scene.addOnUpdateListener {
+            Log.i("DEBUG", "onUpdate")
             if (locationScene == null) {
+                Log.i("DEBUG", "locationScene is null")
                 locationScene = LocationScene(this, arFragment.arSceneView)
 
-                val markerA = createLocationMarker(7.4737611, 51.5061397)?.get()
-                val markerB = createLocationMarker(7.47361, 51.5060459)?.get()
+                createViewRenderable()?.thenAccept { viewRenderable ->
+                    Log.i("DEBUG", "viewRenderable: $viewRenderable")
 
-                Log.i("DEBUG", "markerA: $markerA")
-                Log.i("DEBUG", "markerB: $markerB")
+                    val marker = renderableToLocationMarker(viewRenderable, 7.472779, 51.505454)
 
-                locationScene?.mLocationMarkers?.add(markerA)
-                locationScene?.mLocationMarkers?.add(markerB)
-            }
-
-            if (locationScene != null) {
+                    locationScene?.mLocationMarkers?.add(marker)
+                    locationScene?.refreshAnchors()
+                }
+            } else {
+                Log.i("DEBUG", "processFrame")
                 locationScene?.processFrame(arFragment.arSceneView.arFrame)
             }
         }
     }
 
-    private fun createLocationMarker(longitude: Double, latitude: Double): CompletableFuture<LocationMarker>? {
+    private fun createViewRenderable(): CompletableFuture<ViewRenderable>? {
+        Log.i("DEBUG", "createLocationMarker")
         return ViewRenderable.builder()
                 .setView(this, R.layout.test_image)
                 .build()
-                .thenApply { viewRenderable ->
-                    val node = Node()
-
-                    node.renderable = viewRenderable
-
-                    return@thenApply LocationMarker(longitude, latitude, node)
-                }
     }
 
-    /**
-    private fun addLocation(longitude: Double, latitude: Double) {
-    ViewRenderable.builder()
-    .setView(this, R.layout.test_image)
-    .build()
-    .thenAccept { viewRenderable ->
-    val locationScene = LocationScene(this, arFragment.arSceneView)
-    val node = Node()
+    private fun renderableToLocationMarker(
+            renderable: ViewRenderable,
+            longitude: Double,
+            latitude: Double
+    ): LocationMarker {
+        val node = Node()
 
-    node.renderable = viewRenderable
+        node.renderable = renderable
 
-    val marker = LocationMarker(longitude, latitude, node)
-
-    locationScene.mLocationMarkers.add(marker)
-
-    val frame = arFragment.arSceneView.arFrame
-
-    val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?
-
-    val location = if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-    locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-    } else {
-    null
+        return LocationMarker(longitude, latitude, node)
     }
-
-    Log.i("DEBUG", "frame: $frame")
-    Log.i("DEBUG", "location: $location")
-
-    locationScene.refreshAnchors()
-    locationScene.processFrame(arFragment.arSceneView.arFrame)
-
-    Log.i("DEBUG", "Location added")
-    }
-    } */
 
     private fun placeImage(anchor: Anchor) {
         ViewRenderable.builder()
