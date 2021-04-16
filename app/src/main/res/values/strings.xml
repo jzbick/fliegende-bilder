@@ -1,5 +1,11 @@
 <resources>
   <string name="app_name">Fliegende Bilder</string>
-  <string name="welcome">Hello ITC!</string>
+  <string name="settings_banner">Einstellungen</string>
   <string name="image_description">Historisches Bild</string>
+  <string name="image_size_label">Image Size:</string>
+  <string name="radius_label">Radius:</string>
+  <string name="latitude_label">Latitude</string>
+  <string name="longitude_label">Longitude</string>
+  <string name="gps_toggle_on">GPS aus</string>
+  <string name="gps_toggle_off">GPS an</string>
 </resources>
