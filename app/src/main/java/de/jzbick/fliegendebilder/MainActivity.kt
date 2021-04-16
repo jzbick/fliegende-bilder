@@ -1,33 +1,82 @@
 package de.jzbick.fliegendebilder
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import com.google.ar.sceneform.Node
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import com.google.ar.sceneform.rendering.ViewRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import kotlinx.android.synthetic.main.activity_main.*
-import uk.co.appoly.arcorelocation.LocationMarker
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import uk.co.appoly.arcorelocation.LocationScene
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper
 import java.util.concurrent.CompletableFuture
 
-
 class MainActivity : AppCompatActivity() {
+    private var oldSights: ArrayList<Sight> = ArrayList()
     private lateinit var arFragment: ArFragment
     private var locationScene: LocationScene? = null
+    private lateinit var location: Location
+    private var sights: ArrayList<Sight> = ArrayList()
+    private lateinit var locationManager: LocationManager
+    private lateinit var requests: Requests
+    private val radius = 1.0
+
+    private val locationListener = object : LocationListener {
+        override fun onLocationChanged(loc: Location?) {
+            location = loc!!
+            GlobalScope.launch {
+                sights = requests.getSights(loc.latitude, loc.longitude, radius)
+            }
+        }
+
+        override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {
+            Log.e("LOCATION_ERROR", "$p0, $p1, $p2")
+        }
+
+        override fun onProviderEnabled(p0: String?) {
+            Log.e("LOCATION_ERROR", "$p0")
+        }
+
+        override fun onProviderDisabled(p0: String?) {
+            Log.e("LOCATION_ERROR", "$p0")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        requests = Requests()
 
         arFragment = sceneformFragmentView as ArFragment
 
         if (!ARLocationPermissionHelper.hasPermission(this)) {
             ARLocationPermissionHelper.requestPermission(this)
         }
+    }
 
-        this.init()
+    override fun onStart() {
+        super.onStart()
+        if (ARLocationPermissionHelper.hasPermission(this)) {
 
+            locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 5f, locationListener)
+
+            this.init()
+        }
     }
 
     override fun onResume() {
@@ -37,40 +86,60 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onRestart() {
+        super.onRestart()
+        if (!ARLocationPermissionHelper.hasPermission(this)) {
+            ARLocationPermissionHelper.requestPermission(this)
+        }
+    }
+
     private fun init() {
         arFragment.arSceneView.scene.addOnUpdateListener {
             if (locationScene == null) {
                 locationScene = LocationScene(this, arFragment.arSceneView)
+            } else if (!(oldSights.toArray() contentDeepEquals sights.toArray())) {
+                oldSights.clear()
+                oldSights.addAll(sights)
 
-                createViewRenderable()?.thenAccept { viewRenderable ->
+                for (sight in sights) {
+                    if (sight.images.isNotEmpty()) {
+                        val sightImageBase64 = sight.images.first().base64
+                        createViewRenderable(sightImageBase64)?.thenAccept { viewRenderable ->
+                            val locationMarker = sight.toLocationMarker(viewRenderable)
+                            val distance = sight.getDistanceTo(location.latitude, location.longitude)
 
-                    val marker = renderableToLocationMarker(viewRenderable, 7.472779, 51.505454)
+                            locationMarker.scaleModifier = minOf(((1 - distance / radius) + 0.1), 1.0).toFloat()
+                            locationScene?.mLocationMarkers?.add(locationMarker)
+                            locationScene?.refreshAnchors()
 
-                    locationScene?.mLocationMarkers?.add(marker)
-                    locationScene?.refreshAnchors()
+                        }
+                    }
                 }
-            } else {
-                locationScene?.processFrame(arFragment.arSceneView.arFrame)
             }
+            locationScene?.processFrame(arFragment.arSceneView.arFrame)
         }
+
     }
 
-    private fun createViewRenderable(): CompletableFuture<ViewRenderable>? {
+    private fun createViewRenderable(imageString: String): CompletableFuture<ViewRenderable>? {
+
+        val imageBytes = Base64.decode(imageString, Base64.DEFAULT)
+        val imageBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+        val layout = ConstraintLayout(this)
+        val imageView = ImageView(this)
+        val constraintSet = ConstraintSet()
+
+        constraintSet.centerHorizontally(imageView.id, layout.id)
+        constraintSet.centerVertically(imageView.id, layout.id)
+        layout.layoutParams = ConstraintLayout.LayoutParams(200, 200)
+
+        imageView.setImageBitmap(imageBitmap)
+
+        layout.addView(imageView)
+
         return ViewRenderable.builder()
-                .setView(this, R.layout.test_image)
-                .build()
+            .setView(this, layout)
+            .build()
     }
-
-    private fun renderableToLocationMarker(
-            renderable: ViewRenderable,
-            longitude: Double,
-            latitude: Double
-    ): LocationMarker {
-        val node = Node()
-
-        node.renderable = renderable
-
-        return LocationMarker(longitude, latitude, node)
-    }
-
 }
