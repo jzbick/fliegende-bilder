@@ -1,6 +1,7 @@
 package de.jzbick.fliegendebilder
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.location.Location
 import android.location.LocationListener
@@ -29,13 +30,17 @@ class MainActivity : AppCompatActivity() {
     private var sights: ArrayList<Sight> = ArrayList()
     private lateinit var locationManager: LocationManager
     private lateinit var requests: Requests
-    private val radius = 1.0
+    private val settings = Settings.getInstance()
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(loc: Location?) {
-            location = loc!!
+            location = if (settings.useFixedLocation) {
+                settings.fixedLocation
+            } else {
+                loc!!
+            }
             GlobalScope.launch {
-                sights = requests.getSights(loc.latitude, loc.longitude, radius)
+                sights = requests.getSights(location.latitude, location.longitude, settings.radius)
             }
         }
 
@@ -53,9 +58,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        fab.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         requests = Requests()
 
         arFragment = sceneformFragmentView as ArFragment
@@ -108,7 +116,8 @@ class MainActivity : AppCompatActivity() {
                             val locationMarker = sight.toLocationMarker(viewRenderable)
                             val distance = sight.getDistanceTo(location.latitude, location.longitude)
 
-                            locationMarker.scaleModifier = minOf(((1 - distance / radius) + 0.1), 1.0).toFloat()
+                            locationMarker.scaleModifier =
+                                minOf(((1 - distance / settings.radius) + 0.1), 1.0).toFloat()
                             locationScene?.mLocationMarkers?.add(locationMarker)
                             locationScene?.refreshAnchors()
 
@@ -132,7 +141,7 @@ class MainActivity : AppCompatActivity() {
 
         constraintSet.centerHorizontally(imageView.id, layout.id)
         constraintSet.centerVertically(imageView.id, layout.id)
-        layout.layoutParams = ConstraintLayout.LayoutParams(200, 200)
+        layout.layoutParams = ConstraintLayout.LayoutParams(settings.imageSize, settings.imageSize)
 
         imageView.setImageBitmap(imageBitmap)
 

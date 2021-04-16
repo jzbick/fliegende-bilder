@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="end|bottom"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_camera"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/labelForRadius"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/radius_label"
+            android:textSize="32sp"/>
+        <SeekBar
+            android:id="@+id/radiusSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:max="100"
+            android:min="1"/>
+
+        <TextView
+            android:id="@+id/labelForImageSize"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/image_size_label"
+            android:textSize="32sp"/>
+        <SeekBar
+            android:id="@+id/imageSizeSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:max="1000"
+            android:min="200"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="100dp">
+            <EditText
+                android:id="@+id/editTextLat"
+                android:layout_width="205.5dp"
+                android:layout_height="match_parent"
+                android:hint="@string/latitude_label"
+                android:inputType="numberDecimal"
+                android:textAlignment="center"
+            />
+            <EditText
+                android:id="@+id/editTextLong"
+                android:layout_width="205.5dp"
+                android:layout_height="match_parent"
+                android:hint="@string/longitude_label"
+                android:inputType="numberDecimal"
+                android:textAlignment="center"
+            />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp">
+            <TextView
+                android:id="@+id/latLongLabel"
+                android:layout_width="173.5dp"
+                android:layout_height="match_parent"
+                android:layout_margin="16dp"
+                android:textSize="16sp"/>
+            <ToggleButton
+                android:id="@+id/gpsToggle"
+                android:layout_width="205.5dp"
+                android:layout_height="match_parent"
+                android:textOff="@string/gps_toggle_off"
+                android:textOn="@string/gps_toggle_on"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>
